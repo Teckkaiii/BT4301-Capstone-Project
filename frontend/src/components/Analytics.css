@@ -1,0 +1,22 @@
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-auto-rows: minmax(280px, auto);
+  gap: 20px;
+  padding: 20px;
+  overflow-y: auto;
+  height: calc(100vh - 60px); /* adjust for top banner */
+}
+
+.chart-card {
+  background: #f3f4f6;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.chart-card h3 {
+  margin-bottom: 10px;
+  text-align: center;
+}

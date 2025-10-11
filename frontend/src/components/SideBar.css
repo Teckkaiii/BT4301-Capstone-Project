@@ -1,0 +1,34 @@
+.sidebar {
+  width: 200px;
+  min-width: 180px;
+  height: 100vh;
+  background-color: #1f2937;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 10px;
+}
+
+.sidebar-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.sidebar-tab {
+  padding: 12px 10px;
+  margin: 5px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar-tab:hover {
+  background-color: #374151;
+}
+
+.sidebar-tab.active {
+  background-color: #2563eb;
+  font-weight: bold;
+}

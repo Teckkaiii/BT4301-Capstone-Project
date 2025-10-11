@@ -1,0 +1,40 @@
+.live-feed-container {
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.live-feed-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.congestion {
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.video-wrapper {
+  margin-bottom: 10px;
+}
+
+.vehicle-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vehicle-stat {
+  background: #e5e7eb;
+  padding: 4px 6px;
+  border-radius: 6px;
+  flex: 1 1 45%;
+  text-align: left;
+}
