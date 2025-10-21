@@ -21,7 +21,12 @@ ROLLING_WINDOW = 60  # seconds
 # 1. Flask and MongoDB Initialization
 # ======================================
 
+from flask import Flask, Response, jsonify
+from flask_cors import CORS  # ✅ import this
+
 app = Flask(__name__)
+CORS(app)  # ✅ enable CORS right after creating the app
+
 
 # Load environment variables (works locally & in Docker)
 load_dotenv(dotenv_path=".env")
