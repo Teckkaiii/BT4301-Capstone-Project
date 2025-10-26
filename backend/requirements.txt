@@ -5,5 +5,4 @@ supervision
 numpy==1.25.2
 pymongo
 python-dotenv
-flask
 flask-cors
