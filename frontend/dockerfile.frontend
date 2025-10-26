@@ -1,0 +1,15 @@
+# Dockerfile.frontend
+
+# --- Stage 1: Base Image for Dependencies ---
+FROM node:18-alpine AS base
+WORKDIR /app
+
+# Copy only package files first to leverage Docker caching
+COPY package.json package-lock.json ./
+RUN npm install
+COPY . .
+
+# --- Stage 2: Running the Application ---
+EXPOSE 3000
+# Use the command that starts your development server
+CMD ["npm", "start"]
