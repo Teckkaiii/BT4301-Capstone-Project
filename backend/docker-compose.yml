@@ -24,5 +24,16 @@ services:
     volumes:
       - mongo_data:/data/db
 
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: dockerfile.frontend
+    container_name: frontend
+    ports:
+      - "3000:3000" # Map container port 3000 to host port 3000 (adjust as needed for your frontend framework)
+    volumes:
+      - ../frontend:/app # Mount the frontend code for live reloading (optional but recommended)
+      - /app/node_modules # Create an anonymous volume for node_modules to prevent host overwriting
+
 volumes:
   mongo_data:

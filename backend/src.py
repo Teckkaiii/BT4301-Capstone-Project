@@ -115,6 +115,7 @@ import cv2
 # Rolling window in seconds (1 minute)
 ROLLING_WINDOW = 60
 rolling_counts = deque()  # stores tuples of (timestamp, frame_counts)
+last_1min_counts = {}
 
 def generate_frames():
     video_path = os.path.join(os.getcwd(), "test.mp4")
