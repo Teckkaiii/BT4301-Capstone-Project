@@ -22,4 +22,4 @@ COPY . .
 EXPOSE 5001
 
 # Run the app
-CMD ["python", "src.py"]
+CMD ["python", "app.py"]
