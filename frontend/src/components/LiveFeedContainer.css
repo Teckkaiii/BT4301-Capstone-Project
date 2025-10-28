@@ -1,40 +1,106 @@
-.live-feed-container {
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  padding: 10px;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  display: flex;
-  flex-direction: column;
+/* ---------------------------
+Dashboard grid
+---------------------------- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* responsive columns */
+  grid-auto-rows: auto; /* let rows adjust to content height */
+  gap: 20px;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
-.live-feed-container:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+/* ---------------------------
+Live feed container (card)
+---------------------------- */
+.live-feed-container {
+  display: flex;
+  flex-direction: column; /* vertical layout */
+  justify-content: flex-start;
+  align-items: stretch;
+  background: linear-gradient(135deg, #ffffff, #f9fafb);
+  border-radius: 12px;
+  padding: 15px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  max-height: 500px; /* optional: limit max height */
+}
+
+/* ---------------------------
+Video feed section
+---------------------------- */
+.video-feed {
+  width: 100%;
+  max-height: 250px; /* restrict video height */
+  background: black;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  padding-top: 0; /* remove aspect ratio padding since we limit height */
+  position: relative;
+}
+
+.video-feed video,
+.video-feed img {
+  width: 100%;
+  height: auto;   /* maintain original aspect ratio */
+  border-radius: 10px;
+  object-fit: contain; /* keep video fully visible */
+}
+
+/* ---------------------------
+Other styling remains the same
+---------------------------- */
+.live-feed-container h2 {
+  margin-top: 0;
+  margin-bottom: 5px;
+  font-size: 1.2rem;
+  color: #111827;
+  text-align: center;
+}
+
+.live-feed-container p {
+  margin: 5px 0;
+  font-size: 0.9rem;
+  color: #374151;
+  text-align: center;
 }
 
 .congestion {
+  padding: 6px 10px;
+  border-radius: 9999px;
+  font-weight: 500;
+  background-color: #ef4444;
   color: white;
-  padding: 4px 8px;
-  border-radius: 6px;
-  display: inline-block;
-  margin-bottom: 10px;
-}
-
-.video-wrapper {
+  text-align: center;
   margin-bottom: 10px;
 }
 
 .vehicle-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .vehicle-stat {
   background: #e5e7eb;
-  padding: 4px 6px;
-  border-radius: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
   flex: 1 1 45%;
   text-align: left;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.vehicle-stat:hover {
+  transform: scale(1.05);
+  background: #d1d5db;
+}
+
+.video-wrapper {
+  margin-bottom: 10px;
 }
