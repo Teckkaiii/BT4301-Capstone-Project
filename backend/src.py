@@ -33,6 +33,15 @@ load_dotenv(dotenv_path=".env")
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/vehicle_db")
 client = MongoClient(MONGO_URI)
+
+try:
+    # The ismaster command is a lightweight way to confirm a connection is active
+    client.admin.command('ping')
+    print(f"[{datetime.utcnow()}] *** SUCCESSFULLY CONNECTED TO MONGODB: {MONGO_URI} ***")
+except Exception as e:
+    print(f"[{datetime.utcnow()}] !!! FAILED TO CONNECT TO MONGODB: {MONGO_URI}. Error: {e} !!!")
+
+
 db = client["vehicle_db"]
 counts_collection = db["vehicle_counts"]
 
@@ -44,8 +53,6 @@ def save_counts_to_mongo(counts_dict):
     }
     counts_collection.insert_one(payload)
     print(f"[{datetime.utcnow()}] Counts saved to MongoDB:", counts_dict)
-
-    from pymongo import MongoClient
 
 
 
@@ -116,6 +123,7 @@ import cv2
 ROLLING_WINDOW = 60
 rolling_counts = deque()  # stores tuples of (timestamp, frame_counts)
 last_1min_counts = {}
+last_db_save_time = time.time()
 
 def generate_frames():
     video_path = os.path.join(os.getcwd(), "test.mp4")
@@ -126,7 +134,9 @@ def generate_frames():
         return
 
     global last_1min_counts
+    global last_db_save_time
 
+    first_frame_processed = False
     while True:
         success, frame = cap.read()
         if not success:
@@ -153,9 +163,17 @@ def generate_frames():
 
         last_1min_counts = sum_counts  # global variable for /current_counts endpoint
 
-        # Optional: save to MongoDB every 60 seconds
-        if rolling_counts and now - rolling_counts[0][0] >= ROLLING_WINDOW:
+        # --- MODIFIED: USE A SIMPLE TIMER CHECK ---
+        # Check if 60 seconds (ROLLING_WINDOW) have passed since the last save
+        if now - last_db_save_time >= ROLLING_WINDOW:
+            print("--- 60 SECONDS ELAPSED: FORCING DB SAVE ---")
             save_counts_to_mongo(sum_counts)
+            last_db_save_time = now # Reset the timer
+
+        # --- PREVIOUS LOGIC HERE ---
+        # # Optional: save to MongoDB every 60 seconds
+        # if rolling_counts and now - rolling_counts[0][0] >= ROLLING_WINDOW:
+        #     save_counts_to_mongo(sum_counts)
 
         # Draw counts on frame
         y_offset = 30
