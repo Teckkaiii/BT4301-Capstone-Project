@@ -1,14 +1,9 @@
-from flask import jsonify, render_template, Response
-import os
-from modules.yolo_processing import generate_frames, last_1min_counts_per_location
-from modules.utils import get_congestion_level
-
 # ======================================
 # Flask Routes
 # ======================================
 
 from flask import jsonify, render_template, Response
-from modules.yolo_processing import video_processors, last_1min_counts_per_location
+from modules.yolo_processing import post_processors, last_1min_counts_per_location
 from modules.utils import get_congestion_level
 import time
 
@@ -19,7 +14,7 @@ def init_routes(app):
 
     @app.route('/video_feed/<location>')
     def video_feed(location):
-        vp = video_processors.get(location)
+        vp = post_processors.get(location)
         if not vp:
             return jsonify({"error": f"Invalid location '{location}'"}), 404
 
