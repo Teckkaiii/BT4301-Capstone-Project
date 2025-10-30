@@ -3,6 +3,10 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 from datetime import datetime
 
+# ======================================
+# MongoDB Initialization
+# ======================================
+
 db = None
 counts_collection = None
 

@@ -1,11 +1,20 @@
 from datetime import datetime, timedelta
-from .database import counts_collection
+from . import database
+
+
+from datetime import datetime, timedelta
+from . import database  # import the whole module, not the variable
 
 def get_congestion_level(location, interval_minutes=5):
+    # Ensure DB initialized
+    if database.counts_collection is None:
+        raise RuntimeError("[DB] counts_collection not initialized. Did you call init_db()?")
+
     now = datetime.utcnow()
     past_time = now - timedelta(minutes=interval_minutes)
 
-    recent_counts = list(counts_collection.find({
+    # Access through the module (not a local name)
+    recent_counts = list(database.counts_collection.find({
         "timestamp": {"$gte": past_time},
         "location": location
     }))
