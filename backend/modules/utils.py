@@ -4,14 +4,12 @@ from pymongo import ASCENDING, DESCENDING
 
 
 def get_congestion_level(location, interval_minutes=5):
-    # Ensure DB initialized
     if database.counts_collection is None:
         raise RuntimeError("[DB] counts_collection not initialized. Did you call init_db()?")
 
     now = datetime.utcnow()
     past_time = now - timedelta(minutes=interval_minutes)
 
-    # Access through the module (not a local name)
     recent_counts = list(database.counts_collection.find({
         "timestamp": {"$gte": past_time},
         "location": location
@@ -20,7 +18,8 @@ def get_congestion_level(location, interval_minutes=5):
     if not recent_counts:
         return {"location": location, "level": "Low", "average_vehicles": 0}
 
-    total_vehicles = sum(sum(doc["counts"].values()) for doc in recent_counts)
+    # Just sum the "Total" field per snapshot
+    total_vehicles = sum(doc["counts"].get("Total", 0) for doc in recent_counts)
     avg_vehicles = total_vehicles / len(recent_counts)
 
     if avg_vehicles > 50:

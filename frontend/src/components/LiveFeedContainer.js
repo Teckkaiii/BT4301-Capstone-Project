@@ -90,12 +90,20 @@ function LiveFeedContainer({ feed }) {
       </div>
 
       <div className="vehicle-stats">
-        {Object.entries(live.vehicles).map(([k, v]) => (
-          <div key={k} className="vehicle-stat">
-            <strong>{k.charAt(0).toUpperCase() + k.slice(1)}:</strong> {v}
-          </div>
-        ))}
+        {Object.entries(live.vehicles)
+          // Sort: put "Total" last, others keep original order if possible
+          .sort(([a], [b]) => {
+            if (a === "Total") return 1;    // "Total" goes to the end
+            if (b === "Total") return -1;
+            return 0;                        // keep others in original order
+          })
+          .map(([k, v]) => (
+            <div key={k} className="vehicle-stat">
+              <strong>{k.charAt(0).toUpperCase() + k.slice(1)}:</strong> {v}
+            </div>
+          ))}
       </div>
+
     </div>
   );
 }

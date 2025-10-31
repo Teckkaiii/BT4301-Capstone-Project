@@ -24,30 +24,30 @@ Live feed container (card)
   padding: 15px;
   box-sizing: border-box;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  
+  /* ✅ Allow container to grow naturally with content */
+  height: auto;          /* remove fixed height */
+  max-height: none;      /* remove previous max-height */
+  
   transition: transform 0.2s, box-shadow 0.2s;
-  max-height: 500px; /* optional: limit max height */
 }
 
 /* ---------------------------
 Video feed section
 ---------------------------- */
-.video-feed {
+.video-wrapper {
   width: 100%;
-  max-height: 250px; /* restrict video height */
-  background: black;
-  border-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  padding-top: 0; /* remove aspect ratio padding since we limit height */
-  position: relative;
+  margin-bottom: 10px;
 }
 
-.video-feed video,
-.video-feed img {
+.video-wrapper video,
+.video-wrapper img {
   width: 100%;
-  height: auto;   /* maintain original aspect ratio */
+  height: auto;        /* maintain aspect ratio */
   border-radius: 10px;
   object-fit: contain; /* keep video fully visible */
 }
@@ -80,6 +80,9 @@ Other styling remains the same
   margin-bottom: 10px;
 }
 
+/* ---------------------------
+Vehicle stats section
+---------------------------- */
 .vehicle-stats {
   display: flex;
   flex-wrap: wrap;
@@ -91,7 +94,7 @@ Other styling remains the same
   background: #e5e7eb;
   padding: 6px 10px;
   border-radius: 8px;
-  flex: 1 1 45%;
+  flex: 1 1 45%; /* responsive width */
   text-align: left;
   transition: transform 0.2s, background 0.2s;
 }
