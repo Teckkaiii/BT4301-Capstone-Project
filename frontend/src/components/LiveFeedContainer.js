@@ -1,18 +1,16 @@
-
 import React, { useEffect, useState } from "react";
 import "./LiveFeedContainer.css";
 
-const API_BASE = "http://localhost:5001"; // adjust if needed
+const API_BASE = "http://localhost:5001";
 
 function LiveFeedContainer({ feed }) {
-  const key = feed?.key;               // backend key: e.g., "location1"
-  const label = feed?.label || key;    // UI label
+  const key = feed?.key;
+  const label = feed?.label || key;
 
   const [live, setLive] = useState({
     congestion: 0,
     vehicles: {},
   });
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
 
   useEffect(() => {
@@ -22,7 +20,6 @@ function LiveFeedContainer({ feed }) {
 
     const fetchData = async () => {
       try {
-        setLoading(true);
         setErr(null);
 
         const [countsRes, congestionRes] = await Promise.all([
@@ -46,8 +43,6 @@ function LiveFeedContainer({ feed }) {
         if (!cancel) setLive({ congestion, vehicles });
       } catch (e) {
         if (!cancel) setErr(e.message || "Failed to fetch");
-      } finally {
-        if (!cancel) setLoading(false);
       }
     };
 
@@ -71,13 +66,11 @@ function LiveFeedContainer({ feed }) {
       <h3>{label}</h3>
 
       {err && <p style={{ color: "#dc2626" }}>Error: {err}</p>}
-      {loading && <p>Updating…</p>}
 
       <p className="congestion" style={{ backgroundColor: congestionColor }}>
         Congestion: {Number.isFinite(live.congestion) ? live.congestion.toFixed(1) : "—"} ({congestionLevel})
       </p>
 
-      {/* 🔴 MJPEG stream from Flask */}
       <div className="video-wrapper">
         <img
           src={imgSrc}
@@ -91,19 +84,13 @@ function LiveFeedContainer({ feed }) {
 
       <div className="vehicle-stats">
         {Object.entries(live.vehicles)
-          // Sort: put "Total" last, others keep original order if possible
-          .sort(([a], [b]) => {
-            if (a === "Total") return 1;    // "Total" goes to the end
-            if (b === "Total") return -1;
-            return 0;                        // keep others in original order
-          })
+          .sort(([a], [b]) => (a === "Total" ? 1 : b === "Total" ? -1 : 0))
           .map(([k, v]) => (
             <div key={k} className="vehicle-stat">
               <strong>{k.charAt(0).toUpperCase() + k.slice(1)}:</strong> {v}
             </div>
           ))}
       </div>
-
     </div>
   );
 }
