@@ -1,4 +1,3 @@
-import React from "react";
 import "./TopBanner.css";
 
 function TopBanner() {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import "./LiveFeedContainer.css";
 
 const API_BASE = "http://localhost:5001";
