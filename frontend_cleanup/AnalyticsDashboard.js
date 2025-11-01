@@ -1,5 +1,3 @@
-import React from "react";
-
 function AnalyticsDashboard() {
   // For now, display mock traffic counts
   const mockData = [
@@ -23,3 +21,5 @@ function AnalyticsDashboard() {
 }
 
 export default AnalyticsDashboard;
+
+grep -r "DetectionResult.js" src

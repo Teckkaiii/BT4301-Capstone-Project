@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import "./LocationDetail.css";
 
@@ -15,8 +15,8 @@ function LocationDetail() {
   const fetchData = useCallback(async () => {
     try {
       const [cRes, congRes] = await Promise.all([
-        fetch(`${API_BASE}/current_counts/${locationName}`).then(r => r.json()),
-        fetch(`${API_BASE}/congestion/${locationName}`).then(r => r.json())
+        fetch(`${API_BASE}/current_counts/${encodeURIComponent(locationName)}`).then(r => r.json()),
+        fetch(`${API_BASE}/congestion/${encodeURIComponent(locationName)}`).then(r => r.json())
       ]);
 
       setCounts(cRes.counts || {});
