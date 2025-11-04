@@ -98,7 +98,7 @@ function Recommendations({ activeLocationKeys = ["location1", "location2", "loca
             priority: priority, classColor: classColor, isActive: isActive,
             title: title,
             description: description,
-            metricLabel: '5-min Congestion',
+            metricLabel: 'Congestion',
             metricValue: `${count.toFixed(1)} Avg Vehicles/day`
         }; 
     };
