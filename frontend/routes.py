@@ -1,11 +1,7 @@
-# ======================================
-# Flask Routes
-# ======================================
-
 from flask import jsonify, render_template, Response
-from modules.yolo_processing import post_processors, last_1min_counts_per_location
+import os
+from modules.yolo_processing import generate_frames, last_1min_counts_per_location, video_processors
 from modules.utils import (
-    get_congestion_level,
     get_traffic_volume_trends,
     get_hourly_counts_per_location,
     get_all_locations_congestion,
@@ -15,6 +11,10 @@ from modules.utils import (
 )
 import time
 
+# ======================================
+# Flask Routes
+# ======================================
+
 def init_routes(app):
     @app.route('/')
     def index():
@@ -22,7 +22,7 @@ def init_routes(app):
 
     @app.route('/video_feed/<location>')
     def video_feed(location):
-        vp = post_processors.get(location)
+        vp = video_processors.get(location)
         if not vp:
             return jsonify({"error": f"Invalid location '{location}'"}), 404
 
@@ -43,13 +43,7 @@ def init_routes(app):
     def current_counts(location):
         counts = last_1min_counts_per_location.get(location, {})
         return jsonify({"location": location, "counts": counts})
-
-    @app.route('/congestion/<location>')
-    def congestion(location):
-        data = get_congestion_level(location, interval_minutes=5)
-        return jsonify(data)
-
-
+    
     @app.route('/api/traffic_trends')
     def api_traffic_trends():
         """(Chart 1) Serves hourly trends for the last 8 hours."""
@@ -58,7 +52,8 @@ def init_routes(app):
 
     @app.route('/api/hourly_counts_by_location')
     def api_hourly_counts_by_location():
-        data = get_hourly_counts_per_location(hours=8, key_format='chart')
+        """(Chart 5) Serves hourly counts pivoted by location."""
+        data = get_hourly_counts_per_location(hours=8)
         return jsonify(data)
 
     @app.route('/api/congestion_by_location')
@@ -84,12 +79,4 @@ def init_routes(app):
         """(Chart 6) Serves calculated flow efficiency."""
         data = get_flow_efficiency(interval_minutes=30)
         return jsonify(data)
-    
-    # Route for your new recommendations volume (needs location1, location2 keys)
-    @app.route('/api/last_hour_volume')
-    def api_last_hour_volume():
-        # Pass key_format='raw' to get location1, location2, etc.
-        data = get_hourly_counts_per_location(hours=1, key_format='raw') 
-        return jsonify(data)
-
-
+        
