@@ -1,52 +1,29 @@
 from datetime import datetime, timedelta
-from . import database  # import the whole module, not the variable
+from .database import counts_collection
 from pymongo import ASCENDING, DESCENDING
+import pytz # Import pytz for timezone handling
 
-
-def get_congestion_level(location, interval_minutes=5):
-    # Ensure DB initialized
-    if database.counts_collection is None:
-        raise RuntimeError("[DB] counts_collection not initialized. Did you call init_db()?")
-
-    now = datetime.utcnow()
-    past_time = now - timedelta(minutes=interval_minutes)
-
-    # Access through the module (not a local name)
-    recent_counts = list(database.counts_collection.find({
-        "timestamp": {"$gte": past_time},
-        "location": location
-    }))
-
-    if not recent_counts:
-        return {"location": location, "level": "Low", "average_vehicles": 0}
-
-    total_vehicles = sum(sum(doc["counts"].values()) for doc in recent_counts)
-    avg_vehicles = total_vehicles / len(recent_counts)
-
-    if avg_vehicles > 50:
-        level = "High"
-    elif avg_vehicles > 20:
-        level = "Medium"
-    else:
-        level = "Low"
-
-    return {"location": location, "level": level, "average_vehicles": avg_vehicles}
-
+# Define a common timezone, e.g., Singapore Time
+# This ensures "today" is calculated correctly
+# You can change 'Asia/Singapore' to your server's local timezone
+TIMEZONE = pytz.timezone("Asia/Singapore") 
 
 def get_today_range():
     """Returns the start and end datetime for 'today' in the defined timezone."""
-    now = datetime.now()
+    now = datetime.now(TIMEZONE)
     start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_day = start_of_day + timedelta(days=1)
     
     # Convert back to UTC for MongoDB queries, as timestamps are stored in UTC
-    return start_of_day, end_of_day
+    return start_of_day.astimezone(pytz.utc), end_of_day.astimezone(pytz.utc)
 
 def get_time_range(hours_ago=8):
     """Returns the start and end datetime for the last N hours."""
     now_utc = datetime.utcnow()
     start_time = now_utc - timedelta(hours=hours_ago)
     return start_time, now_utc
+
+# --- New Analytics Functions ---
 
 def get_traffic_volume_trends(hours=8):
     """
@@ -77,7 +54,60 @@ def get_traffic_volume_trends(hours=8):
         # Format the output to match the chart
         {"$project": {"_id": 0, "time": "$_id", "vehicles": 1, "congestion": 1}}
     ]
-    return list(database.counts_collection.aggregate(pipeline))
+    return list(counts_collection.aggregate(pipeline))
+
+def get_hourly_counts_per_location(hours=8):
+    """
+    (Chart 5)
+    Aggregates total vehicles per location, pivoted by hour, for the last N hours.
+    This format is exactly what the 'Count vs Time' chart needs.
+    """
+    start_time, end_time = get_time_range(hours_ago=hours)
+    
+    # Get the location names from the VIDEO_MAP in yolo_processing
+    # In a real app, this might come from a config or the DB
+    # For this project, we know them
+    locations = ["location1", "location2", "location3"]
+    
+    # Build the dynamic $group stage
+    group_stage = {
+        "_id": {"$hour": "$timestamp"},
+        "time": {"$first": {"$hour": "$timestamp"}}
+    }
+    
+    # Dynamically add a sum for each location
+    for loc in locations:
+        group_stage[loc] = {
+            "$sum": {
+                "$cond": [
+                    {"$eq": ["$location", loc]},
+                    {"$ifNull": ["$counts.Total", 0]}, # Use Total count
+                    0
+                ]
+            }
+        }
+
+    pipeline = [
+        {"$match": {"timestamp": {"$gte": start_time, "$lt": end_time}}},
+        {"$group": group_stage},
+        {"$sort": {"time": ASCENDING}},
+        {"$project": {"_id": 0}} # Clean up the output
+    ]
+    
+    # Rename location1 -> A, location2 -> B, etc. for the chart
+    results = list(counts_collection.aggregate(pipeline))
+    
+    # Map 'location1' to 'A', 'location2' to 'B' etc.
+    # This is needed because the chart dataKey is "A", "B", "C"
+    mapping = {"location1": "A", "location2": "B", "location3": "C"}
+    final_results = []
+    for row in results:
+        new_row = {"time": row["time"]}
+        for py_loc, chart_loc in mapping.items():
+            new_row[chart_loc] = row.get(py_loc, 0)
+        final_results.append(new_row)
+        
+    return final_results
 
 def get_all_locations_congestion(interval_minutes=5):
     """
@@ -99,62 +129,7 @@ def get_all_locations_congestion(interval_minutes=5):
         # Format the output to match the chart
         {"$project": {"_id": 0, "location": "$_id", "congestion": 1}}
     ]
-    return list(database.counts_collection.aggregate(pipeline))
-
-def get_peak_hour_analysis(today=True):
-    """
-    (Chart 3)
-    A 2-stage query:
-    1. Finds the busiest hour of the day.
-    2. Gets the vehicle breakdown for that specific hour.
-    """
-    if today:
-        start_time, end_time = get_today_range()
-    else:
-        start_time, end_time = get_time_range(hours_ago=24) # Default to last 24h
-
-    # --- Stage 1: Find the peak hour ---
-    peak_hour_pipeline = [
-        {"$match": {"timestamp": {"$gte": start_time, "$lt": end_time}}},
-        {
-            "$group": {
-                "_id": {"$hour": "$timestamp"},
-                "totalVehicles": {"$sum": {"$ifNull": ["$counts.Total", 0]}}
-            }
-        },
-        {"$sort": {"totalVehicles": DESCENDING}},
-        {"$limit": 1}
-    ]
-    
-    peak_hour_result = list(database.counts_collection.aggregate(peak_hour_pipeline))
-    if not peak_hour_result:
-        return [] # No data for today
-        
-    peak_hour = peak_hour_result[0]['_id']
-
-    # --- Stage 2: Get vehicle breakdown for that hour ---
-    analysis_pipeline = [
-        {
-            "$match": {
-                "timestamp": {"$gte": start_time, "$lt": end_time},
-                # Add a calculated 'hour' field and match against it
-                "$expr": {"$eq": [{"$hour": "$timestamp"}, peak_hour]}
-            }
-        },
-        {"$project": {"counts_kvp": {"$objectToArray": "$counts"}}},
-        {"$unwind": "$counts_kvp"},
-        {
-            "$group": {
-                "_id": "$counts_kvp.k",
-                "count": {"$sum": "$counts_kvp.v"}
-            }
-        },
-        {"$match": {"_id": {"$ne": "Total"}}},
-        # Format for the RadarChart
-        {"$project": {"_id": 0, "vehicle": "$_id", "count": 1}}
-    ]
-    
-    return list(database.counts_collection.aggregate(analysis_pipeline))
+    return list(counts_collection.aggregate(pipeline))
 
 def get_vehicle_type_distribution(today=True):
     """
@@ -187,60 +162,62 @@ def get_vehicle_type_distribution(today=True):
         # Format for the chart
         {"$project": {"_id": 0, "name": "$_id", "value": 1}}
     ]
-    return list(database.counts_collection.aggregate(pipeline))
+    return list(counts_collection.aggregate(pipeline))
 
-def get_hourly_counts_per_location(hours=8, key_format='chart'):
+def get_peak_hour_analysis(today=True):
     """
-    Aggregates total vehicles per location, pivoted by hour, for the last N hours.
-    key_format='chart' (default) returns keys A, B, C.
-    key_format='raw' returns keys location1, location2, location3.
+    (Chart 3)
+    A 2-stage query:
+    1. Finds the busiest hour of the day.
+    2. Gets the vehicle breakdown for that specific hour.
     """
-    start_time, end_time = get_time_range(hours_ago=hours)
-    locations = ["location1", "location2", "location3"]
-    
-    # ... (dynamic $group stage creation remains the same) ...
-    group_stage = {
-        "_id": {"$hour": "$timestamp"},
-        "time": {"$first": {"$hour": "$timestamp"}}
-    }
-    
-    # Dynamically add a sum for each location
-    for loc in locations:
-        group_stage[loc] = {
-            "$sum": {
-                "$cond": [
-                    {"$eq": ["$location", loc]},
-                    {"$ifNull": ["$counts.Total", 0]}, # Use Total count
-                    0
-                ]
-            }
-        }
-    
-    pipeline = [
+    if today:
+        start_time, end_time = get_today_range()
+    else:
+        start_time, end_time = get_time_range(hours_ago=24) # Default to last 24h
+
+    # --- Stage 1: Find the peak hour ---
+    peak_hour_pipeline = [
         {"$match": {"timestamp": {"$gte": start_time, "$lt": end_time}}},
-        {"$group": group_stage},
-        {"$sort": {"time": ASCENDING}},
-        {"$project": {"_id": 0}}
+        {
+            "$group": {
+                "_id": {"$hour": "$timestamp"},
+                "totalVehicles": {"$sum": {"$ifNull": ["$counts.Total", 0]}}
+            }
+        },
+        {"$sort": {"totalVehicles": DESCENDING}},
+        {"$limit": 1}
     ]
     
-    results = list(database.counts_collection.aggregate(pipeline))
-
-    # 🟢 NEW LOGIC TO CONTROL OUTPUT KEYS 🟢
-    if key_format == 'raw':
-        # Return results with keys location1, location2, etc. (no rename)
-        # This is what the Recommendations component needs!
-        return results
-
-    # Original logic for 'chart' format (A, B, C)
-    mapping = {"location1": "A", "location2": "B", "location3": "C"}
-    final_results = []
-    for row in results:
-        new_row = {"time": row["time"]}
-        for py_loc, chart_loc in mapping.items():
-            new_row[chart_loc] = row.get(py_loc, 0)
-        final_results.append(new_row)
+    peak_hour_result = list(counts_collection.aggregate(peak_hour_pipeline))
+    if not peak_hour_result:
+        return [] # No data for today
         
-    return final_results
+    peak_hour = peak_hour_result[0]['_id']
+
+    # --- Stage 2: Get vehicle breakdown for that hour ---
+    analysis_pipeline = [
+        {
+            "$match": {
+                "timestamp": {"$gte": start_time, "$lt": end_time},
+                # Add a calculated 'hour' field and match against it
+                "$expr": {"$eq": [{"$hour": "$timestamp"}, peak_hour]}
+            }
+        },
+        {"$project": {"counts_kvp": {"$objectToArray": "$counts"}}},
+        {"$unwind": "$counts_kvp"},
+        {
+            "$group": {
+                "_id": "$counts_kvp.k",
+                "count": {"$sum": "$counts_kvp.v"}
+            }
+        },
+        {"$match": {"_id": {"$ne": "Total"}}},
+        # Format for the RadarChart
+        {"$project": {"_id": 0, "vehicle": "$_id", "count": 1}}
+    ]
+    
+    return list(counts_collection.aggregate(analysis_pipeline))
 
 def get_flow_efficiency(interval_minutes=30):
     """
