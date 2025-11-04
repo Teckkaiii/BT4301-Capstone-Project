@@ -26,6 +26,7 @@ BATCH_SIZE = len(VIDEO_MAP)
 frame_queue = queue.Queue(maxsize=BATCH_SIZE * 2)
 results_queues = {loc: queue.Queue(maxsize=2) for loc in VIDEO_MAP}
 
+
 # --- Global Shared State ---
 # This dict is shared between all PostProcessor threads
 last_1min_counts_per_location = {}
@@ -94,6 +95,9 @@ class StreamPostProcessor:
                 
             frame, results = item
             
+            # --- PROFILING START ---
+            t1 = time.time()
+
             # 2. Process Detections
             detections = sv.Detections.from_ultralytics(results)
             detections = self.byte_tracker.update_with_detections(detections)
@@ -173,6 +177,9 @@ class StreamPostProcessor:
             except Exception as e:
                 print(f"[{self.location}] Draw overlay error: {e}")
                 pass
+
+            t2 = time.time()
+            print(f"[{self.location}] Postproc took {t2 - t1:.3f}s, FPS={self.current_fps:.2f}")
             
             # 10. Encode Frame for Streaming
             ret, buffer = cv2.imencode('.jpg', annotated_frame)
@@ -188,6 +195,7 @@ class StreamPostProcessor:
 def video_reader_worker(location, video_path, frame_queue):
     """
     Reads frames from a video source and puts them into the shared frame_queue.
+    Pushes frames as fast as they are read from the video (uncapped FPS).
     """
     print(f"[{location}] Reader thread started...")
     cap = cv2.VideoCapture(video_path)
@@ -195,11 +203,6 @@ def video_reader_worker(location, video_path, frame_queue):
         print(f"[{location}] Could not open video: {video_path}")
         return
 
-    # Get video FPS to sleep and simulate a real-time stream
-    # This prevents this thread from flooding the queue
-    video_fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_delay = 1.0 / video_fps
-    
     while True:
         try:
             success, frame = cap.read()
@@ -209,17 +212,16 @@ def video_reader_worker(location, video_path, frame_queue):
                 continue
 
             frame_resized = cv2.resize(frame, STANDARD_SIZE)
-            
-            # Put (location, frame) into the queue.
-            # This will block if the queue is full, providing backpressure.
             frame_queue.put((location, frame_resized))
 
-            # Simulate the video's original framerate
-            time.sleep(frame_delay) 
-            
+            # Small sleep to prevent 100% CPU usage
+            time.sleep(0.001)
+
         except Exception as e:
             print(f"[{location}] Reader error: {e}")
             time.sleep(1)
+
+
 
 
 def inference_worker(model, frame_queue, results_queues, batch_size):
@@ -252,8 +254,12 @@ def inference_worker(model, frame_queue, results_queues, batch_size):
         # 3. Run batched inference
         if batch_frames:
             try:
-                # Run inference with a smaller, faster image size
-                results_list = model(batch_frames, verbose=False, imgsz=320)
+                # --- PROFILING START ---
+                t0 = time.time()
+                results_list = model(batch_frames, verbose=False, imgsz=224)
+                t1 = time.time()
+                print(f"[Inference] Batch {len(batch_frames)} took {t1 - t0:.3f}s")
+                # --- PROFILING END ---
                 
                 # 4. Distribute results to the correct post-processor
                 for i, results in enumerate(results_list):
@@ -263,6 +269,7 @@ def inference_worker(model, frame_queue, results_queues, batch_size):
             
             except Exception as e:
                 print(f"[Inference] Error processing batch: {e}")
+
 
 
 # --- Main Application Setup ---
