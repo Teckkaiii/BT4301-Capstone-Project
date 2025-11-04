@@ -11,7 +11,8 @@ from modules.utils import (
     get_all_locations_congestion,
     get_vehicle_type_distribution,
     get_peak_hour_analysis,
-    get_flow_efficiency
+    get_flow_efficiency,
+    get_heavy_vehicle_counts_per_location
 )
 import time
 
@@ -63,8 +64,8 @@ def init_routes(app):
 
     @app.route('/api/congestion_by_location')
     def api_congestion_by_location():
-        """(Chart 2) Serves congestion for all locations (last 5 min)."""
-        data = get_all_locations_congestion(interval_minutes=5)
+        """(Chart 2) Serves congestion for all locations (last 60 min)."""
+        data = get_all_locations_congestion(interval_minutes=1440)
         return jsonify(data)
 
     @app.route('/api/vehicle_distribution')
@@ -90,6 +91,17 @@ def init_routes(app):
     def api_last_hour_volume():
         # Pass key_format='raw' to get location1, location2, etc.
         data = get_hourly_counts_per_location(hours=1, key_format='raw') 
+        return jsonify(data)
+    
+    @app.route('/api/heavy_vehicle_counts')
+    def api_heavy_vehicle_counts():
+        """
+        Returns heavy vehicle counts (truck + bus) per location
+        for use in the Recommendations tab.
+        Default: last 1 hour.
+        """
+        data = get_heavy_vehicle_counts_per_location(interval_minutes=1440)
+        print(data)
         return jsonify(data)
 
 

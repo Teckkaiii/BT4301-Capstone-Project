@@ -78,7 +78,7 @@ def get_traffic_volume_trends(hours=8):
     ]
     return list(database.counts_collection.aggregate(pipeline))
 
-def get_all_locations_congestion(interval_minutes=5):
+def get_all_locations_congestion(interval_minutes=1440):
     """
     (Chart 2)
     Gets the average vehicle count (congestion) for ALL locations
@@ -272,3 +272,36 @@ def get_flow_efficiency(interval_minutes=30):
         })
         
     return efficiency_data
+
+def get_heavy_vehicle_counts_per_location(interval_minutes=1440):
+    """
+    Returns the sum of 'truck' + 'bus' for each location
+    over the last `interval_minutes`.
+    """
+    end_time = datetime.utcnow()
+    start_time = end_time - timedelta(minutes=interval_minutes)
+
+    pipeline = [
+        {"$match": {"timestamp": {"$gte": start_time, "$lt": end_time}}},
+        {"$project": {
+            "location": 1,
+            "truck": {"$ifNull": ["$counts.Truck", 0]},
+            "bus": {"$ifNull": ["$counts.Bus", 0]}
+        }},
+        {"$group": {
+            "_id": "$location",
+            "total_truck": {"$sum": "$truck"},
+            "total_bus": {"$sum": "$bus"}
+        }},
+        {"$project": {
+            "_id": 0,
+            "location": "$_id",
+            "truck": "$total_truck",
+            "bus": "$total_bus",
+            "total_heavy": {"$add": ["$total_truck", "$total_bus"]}
+        }}
+    ]
+
+    results = list(database.counts_collection.aggregate(pipeline))
+
+    return results
