@@ -98,7 +98,7 @@ function Analytics() {
 
       {/* Congestion by Location */}
       <div className="chart-card">
-        <h3>Congestion by Location (Last 5 min)</h3>
+        <h3>Congestion by Location (Last 1 day)</h3>
         <BarChart width={300} height={250} data={congestionByLocation}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="location" />
