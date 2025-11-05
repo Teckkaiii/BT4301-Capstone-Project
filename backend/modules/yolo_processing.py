@@ -258,7 +258,7 @@ def inference_worker(model, frame_queue, results_queues, batch_size):
                 t0 = time.time()
                 results_list = model(batch_frames, verbose=False, imgsz=224)
                 t1 = time.time()
-                print(f"[Inference] Batch {len(batch_frames)} took {t1 - t0:.3f}s")
+                #print(f"[Inference] Batch {len(batch_frames)} took {t1 - t0:.3f}s")
                 # --- PROFILING END ---
                 
                 # 4. Distribute results to the correct post-processor
