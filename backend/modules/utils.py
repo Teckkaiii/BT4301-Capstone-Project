@@ -111,9 +111,7 @@ def get_traffic_volume_trends(hours=8):
     ]
     return list(database.counts_collection.aggregate(pipeline))
 
-
-# Get congestion levels for all locations
-def get_all_locations_congestion(interval_minutes=60):
+def get_all_locations_congestion(interval_minutes=1440):
     """
     (Chart 2)
     Gets the average vehicle count (congestion) for ALL locations
@@ -227,22 +225,16 @@ def get_vehicle_type_distribution(today=True):
     ]
     return list(database.counts_collection.aggregate(pipeline))
 
-
-# Get hourly counts per location for the last N hours
-def get_hourly_counts_per_location(hours=8):
+def get_hourly_counts_per_location(hours=8, key_format='chart'):
     """
-    (Chart 5)
     Aggregates total vehicles per location, pivoted by hour, for the last N hours.
-    This format is exactly what the 'Count vs Time' chart needs.
+    key_format='chart' (default) returns keys A, B, C.
+    key_format='raw' returns keys location1, location2, location3.
     """
     start_time, end_time = get_time_range(hours_ago=hours)
-    
-    # Get the location names from the VIDEO_MAP in yolo_processing
-    # In a real app, this might come from a config or the DB
-    # For this project, we know them
     locations = ["location1", "location2", "location3"]
     
-    # Build the dynamic $group stage
+    # ... (dynamic $group stage creation remains the same) ...
     group_stage = {
         "_id": {"$hour": "$timestamp"},
         "time": {"$first": {"$hour": "$timestamp"}}
@@ -259,19 +251,23 @@ def get_hourly_counts_per_location(hours=8):
                 ]
             }
         }
-
+    
     pipeline = [
         {"$match": {"timestamp": {"$gte": start_time, "$lt": end_time}}},
         {"$group": group_stage},
         {"$sort": {"time": ASCENDING}},
-        {"$project": {"_id": 0}} # Clean up the output
+        {"$project": {"_id": 0}}
     ]
     
-    # Rename location1 -> A, location2 -> B, etc. for the chart
     results = list(database.counts_collection.aggregate(pipeline))
-    
-    # Map 'location1' to 'A', 'location2' to 'B' etc.
-    # This is needed because the chart dataKey is "A", "B", "C"
+
+    # 🟢 NEW LOGIC TO CONTROL OUTPUT KEYS 🟢
+    if key_format == 'raw':
+        # Return results with keys location1, location2, etc. (no rename)
+        # This is what the Recommendations component needs!
+        return results
+
+    # Original logic for 'chart' format (A, B, C)
     mapping = {"location1": "A", "location2": "B", "location3": "C"}
     final_results = []
     for row in results:
@@ -315,3 +311,36 @@ def get_flow_efficiency(interval_minutes=30):
         })
         
     return efficiency_data
+
+def get_heavy_vehicle_counts_per_location(interval_minutes=1440):
+    """
+    Returns the sum of 'truck' + 'bus' for each location
+    over the last `interval_minutes`.
+    """
+    end_time = datetime.utcnow()
+    start_time = end_time - timedelta(minutes=interval_minutes)
+
+    pipeline = [
+        {"$match": {"timestamp": {"$gte": start_time, "$lt": end_time}}},
+        {"$project": {
+            "location": 1,
+            "truck": {"$ifNull": ["$counts.Truck", 0]},
+            "bus": {"$ifNull": ["$counts.Bus", 0]}
+        }},
+        {"$group": {
+            "_id": "$location",
+            "total_truck": {"$sum": "$truck"},
+            "total_bus": {"$sum": "$bus"}
+        }},
+        {"$project": {
+            "_id": 0,
+            "location": "$_id",
+            "truck": "$total_truck",
+            "bus": "$total_bus",
+            "total_heavy": {"$add": ["$total_truck", "$total_bus"]}
+        }}
+    ]
+
+    results = list(database.counts_collection.aggregate(pipeline))
+
+    return results
