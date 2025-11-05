@@ -13,16 +13,24 @@ function SideBar() {
 
   return (
     <div className="sidebar">
-      <h2 className="sidebar-title">Group 22</h2>
-      {tabs.map((tab) => (
-        <div
-          key={tab.name}
-          className={`sidebar-tab ${location.pathname === tab.path ? "active" : ""}`}
-          onClick={() => navigate(tab.path)}
-        >
-          {tab.name}
-        </div>
-      ))}
+      {/* Title and subtitle at the top */}
+      <div className="sidebar-header">
+        <h3 className="sidebar-title">Traffic Management</h3>
+        <h5 className="sidebar-subtitle">Smart City Platform</h5>
+      </div>
+
+      {/* Tabs below */}
+      <div className="tabs-container">
+        {tabs.map((tab) => (
+          <div
+            key={tab.name}
+            className={`sidebar-tab ${location.pathname === tab.path ? "active" : ""}`}
+            onClick={() => navigate(tab.path)}
+          >
+            {tab.name}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

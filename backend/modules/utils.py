@@ -1,30 +1,59 @@
 from datetime import datetime, timedelta
 from . import database  # import the whole module, not the variable
 from pymongo import ASCENDING, DESCENDING
+from datetime import datetime, timedelta
+import numpy as np
 
+# ======================================
+# Traffic Data Analysis Functions
+# ======================================
 
-def get_congestion_level(location, interval_minutes=5):
+# Get congestion level for a specific location over the last N minutes
+def get_congestion_level(location, interval_minutes=5, history_minutes=60):
     if database.counts_collection is None:
         raise RuntimeError("[DB] counts_collection not initialized. Did you call init_db()?")
 
     now = datetime.utcnow()
     past_time = now - timedelta(minutes=interval_minutes)
+    history_time = now - timedelta(minutes=history_minutes)
 
+    # Recent window for current status
     recent_counts = list(database.counts_collection.find({
         "timestamp": {"$gte": past_time},
+        "location": location
+    }))
+
+    # Wider window for adaptive threshold calculation
+    historical_counts = list(database.counts_collection.find({
+        "timestamp": {"$gte": history_time},
         "location": location
     }))
 
     if not recent_counts:
         return {"location": location, "level": "Low", "average_vehicles": 0}
 
-    # Just sum the "Total" field per snapshot
+    # Compute average in recent interval
     total_vehicles = sum(doc["counts"].get("Total", 0) for doc in recent_counts)
     avg_vehicles = total_vehicles / len(recent_counts)
 
-    if avg_vehicles > 50:
+    # Compute baseline from history
+    if historical_counts:
+        hist_values = [doc["counts"].get("Total", 0) for doc in historical_counts]
+        mean = np.mean(hist_values)
+        std = np.std(hist_values)
+
+        # Dynamic thresholds
+        high_threshold = mean + 2 * std
+        med_threshold = mean + std
+    else:
+        # Fallback static thresholds if no history
+        high_threshold = 50
+        med_threshold = 20
+
+    # Determine congestion level
+    if avg_vehicles > high_threshold:
         level = "High"
-    elif avg_vehicles > 20:
+    elif avg_vehicles > med_threshold:
         level = "Medium"
     else:
         level = "Low"
@@ -32,6 +61,8 @@ def get_congestion_level(location, interval_minutes=5):
     return {"location": location, "level": level, "average_vehicles": avg_vehicles}
 
 
+
+# Helper functions for time ranges
 def get_today_range():
     """Returns the start and end datetime for 'today' in the defined timezone."""
     now = datetime.now()
@@ -41,12 +72,14 @@ def get_today_range():
     # Convert back to UTC for MongoDB queries, as timestamps are stored in UTC
     return start_of_day, end_of_day
 
+# Helper function to get time range for the last N hours
 def get_time_range(hours_ago=8):
     """Returns the start and end datetime for the last N hours."""
     now_utc = datetime.utcnow()
     start_time = now_utc - timedelta(hours=hours_ago)
     return start_time, now_utc
 
+# Analysis Functions for Dashboard Charts
 def get_traffic_volume_trends(hours=8):
     """
     (Chart 1)
@@ -78,7 +111,9 @@ def get_traffic_volume_trends(hours=8):
     ]
     return list(database.counts_collection.aggregate(pipeline))
 
-def get_all_locations_congestion(interval_minutes=5):
+
+# Get congestion levels for all locations
+def get_all_locations_congestion(interval_minutes=60):
     """
     (Chart 2)
     Gets the average vehicle count (congestion) for ALL locations
@@ -100,6 +135,8 @@ def get_all_locations_congestion(interval_minutes=5):
     ]
     return list(database.counts_collection.aggregate(pipeline))
 
+
+# Get peak hour analysis for today
 def get_peak_hour_analysis(today=True):
     """
     (Chart 3)
@@ -155,6 +192,8 @@ def get_peak_hour_analysis(today=True):
     
     return list(database.counts_collection.aggregate(analysis_pipeline))
 
+
+# Get vehicle type distribution for today or all-time
 def get_vehicle_type_distribution(today=True):
     """
     (Chart 4)
@@ -188,6 +227,8 @@ def get_vehicle_type_distribution(today=True):
     ]
     return list(database.counts_collection.aggregate(pipeline))
 
+
+# Get hourly counts per location for the last N hours
 def get_hourly_counts_per_location(hours=8):
     """
     (Chart 5)
@@ -241,6 +282,8 @@ def get_hourly_counts_per_location(hours=8):
         
     return final_results
 
+
+# Get flow efficiency for all locations
 def get_flow_efficiency(interval_minutes=30):
     """
     (Chart 6)

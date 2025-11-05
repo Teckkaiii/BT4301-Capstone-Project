@@ -1,34 +1,71 @@
+/* Sidebar container */
 .sidebar {
-  width: 200px;
+  width: 220px;
   min-width: 180px;
   height: 100vh;
-  background-color: #1f2937;
+  background-color: #1f2937; /* dark navy */
   color: white;
   display: flex;
   flex-direction: column;
-  padding: 20px 10px;
+  padding: 1.5rem 1rem;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+  border-radius: 0 10px 10px 0; /* subtle rounded edge on right */
+}
+
+/* Header */
+.sidebar-header {
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
 }
 
 .sidebar-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 20px;
-  text-align: center;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
+.sidebar-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #a0aec0; /* softer gray */
+}
+
+/* Tabs container */
+.tabs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex-grow: 1; /* tabs expand if needed */
+}
+
+/* Individual tab */
 .sidebar-tab {
-  padding: 12px 10px;
-  margin: 5px 0;
+  padding: 0.6rem 1rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  color: #e5e7eb; /* light gray text */
 }
 
 .sidebar-tab:hover {
-  background-color: #374151;
+  background-color: #374151; /* slightly lighter dark */
 }
 
 .sidebar-tab.active {
-  background-color: #2563eb;
-  font-weight: bold;
+  background-color: #2563eb; /* blue highlight */
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4); /* subtle glow */
+}
+
+/* Optional: scroll if tabs overflow */
+.tabs-container {
+  overflow-y: auto;
 }

@@ -3,7 +3,7 @@ import "./TopBanner.css";
 function TopBanner() {
   return (
     <div className="top-banner">
-      <h1>Capstone Group 22</h1>
+      <h1>AI- Powered Traffic Monitoring System</h1>
     </div>
   );
 }

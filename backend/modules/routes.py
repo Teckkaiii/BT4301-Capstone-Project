@@ -17,8 +17,8 @@ import time
 
 def init_routes(app):
     @app.route('/')
-    def index():
-        return render_template('index.html')
+    def health_check():
+        return {'status': 'ok', 'message': 'Backend is running'}, 200
 
     @app.route('/video_feed/<location>')
     def video_feed(location):
