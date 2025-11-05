@@ -74,15 +74,17 @@ function Analytics() {
 
       {/* Congestion by Location */}
       <div className="chart-card">
-        <h3>Congestion by Location (Last 1 day)</h3>
-        <BarChart width={300} height={250} data={congestionByLocation}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="location" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="congestion" fill="#8884d8" />
-        </BarChart>
+        <h3>Congestion by Location (Last Day)</h3>
+        <ResponsiveContainer width="100%" height={230}>
+          <BarChart data={congestionByLocation}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="location" />
+            <YAxis />
+            <Tooltip />
+            <Legend verticalAlign="top" align="right" iconSize={12} />
+            <Bar dataKey="congestion" fill="#8884d8" />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Peak Hour Analysis */}

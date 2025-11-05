@@ -11,7 +11,7 @@ from modules.database import save_counts_to_mongo
 # --- Constants ---
 STANDARD_SIZE = (640, 480)
 ROLLING_WINDOW = 60
-MODEL_PATH = "Models/best (test model).pt"
+MODEL_PATH = "Models/best.pt"
 
 VIDEO_MAP = {
     "location1": "video_source/test.mp4",
@@ -179,7 +179,7 @@ class StreamPostProcessor:
                 pass
 
             t2 = time.time()
-            print(f"[{self.location}] Postproc took {t2 - t1:.3f}s, FPS={self.current_fps:.2f}")
+            #print(f"[{self.location}] Postproc took {t2 - t1:.3f}s, FPS={self.current_fps:.2f}")
             
             # 10. Encode Frame for Streaming
             ret, buffer = cv2.imencode('.jpg', annotated_frame)
